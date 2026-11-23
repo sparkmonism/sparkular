@@ -1,0 +1,47 @@
+name: Build macOS plugins
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (universal: Apple Silicon + Intel)
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+
+      - name: Build
+        run: cmake --build build --config Release -j 4
+
+      - name: Collect AU, VST3 and Standalone
+        run: |
+          mkdir -p dist
+          find build \( -name "*.component" -o -name "*.vst3" -o -name "*.app" \) -maxdepth 4 -prune -exec cp -R {} dist/ \;
+          # ad-hoc sign so Apple Silicon Macs will load them
+          for b in dist/*; do codesign --force --deep -s - "$b"; done
+          ls -la dist
+          name="${GITHUB_REPOSITORY#*/}"
+          ditto -c -k --keepParent dist "${name}-macOS.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-macOS
+          path: "*-macOS.zip"
+
+      - name: Attach to release (version tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*-macOS.zip"
