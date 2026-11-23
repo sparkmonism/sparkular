@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure (universal: Apple Silicon + Intel)
+      - name: Configure (universal, Apple Silicon and Intel)
         run: >
           cmake -B build
           -DCMAKE_BUILD_TYPE=Release
