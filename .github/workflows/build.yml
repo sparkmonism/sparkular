@@ -40,8 +40,11 @@ jobs:
           name: ${{ github.event.repository.name }}-macOS
           path: "*-macOS.zip"
 
-      - name: Attach to release (version tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish to the "latest" release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest
+          name: Latest macOS build
+          prerelease: true
+          target_commitish: ${{ github.sha }}
           files: "*-macOS.zip"
